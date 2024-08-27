@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+       
+            <!-- <div style="display: flex; align-items: center;">
+                <img src="logo2.webp" alt="Beauty and Balogun Recipe Collections Logo" class="rotating-logo" style="height: 50px; margin-right: 10px;">
+                
+                <h1 class="scrolling-text">B E A U T Y & B A L O G U N</h1>
+                <h1>forkify</h1> -->
+
+                <div style="display: flex; align-items: center;">
+                    <img src="logo2.webp" alt="Beauty and Balogun Recipe Collections Logo" class="rotating-logo" style="height: 50px; margin-right: 10px;">
+                    <div class="scrolling-text-container">
+                        <div class="scrolling-text">B E A U T Y </div>
+                    </div>
+        
+        </div>
+        <nav>    
+            <button id="home-button" onclick="goToHome()">Home</button>
+            <button id="about-button" onclick="goToAbout()">About</button>
+        </nav>
+
+        <input type="text" id="search" placeholder="Search over 1,000,000 recipes...">
+        <button id="search-button">SEARCH</button>
+        <a href="recipe.html"><button id="add-recipe-button">ADD RECIPE</button></a>
+        <div class="bookmark-container">
+            <button id="bookmarks-button" onclick="toggleBookmarkDropdown()">BOOKMARKS (<span id="bookmark-count">0</span>)</button>
+            <ul id="bookmark-dropdown" class="hidden"></ul>
+        </div>
+
+        
+    </header>
+    <div id="container">
+        <aside id="sidebar">
+            <ul id="recipe-list"></ul>
+            <div id="pagination">
+                <button id="prev-button" onclick="prevPage()">Page 1 &lt;</button>
+                <button id="next-button" onclick="nextPage()">Page 2 &gt;</button>
+            </div>
+        </aside>
+        <main id="recipe-detail">
+            <p>Start by searching for a recipe or an ingredient. Have fun!</p>
+
+            <div id="intro-carousel" class="carousel">
+                <img class="carousel-image" src="beans and bread-1.webp" alt="First Dish">
+                <img class="carousel-image" src="egusi and pounded yam-22.webp" alt="Second Dish">
+                <img class="carousel-image" src="fried rice image-3.webp" alt="Third Dish">
+                <img class="carousel-image" src="golden rice-4.webp" alt="Fourth Dish">
+                <img class="carousel-image" src="crayfish rice-5.webp" alt="Fifth Dish">
+            </div>
+        </main>
+    </div>
+    
+
+   <script>
+document.addEventListener("DOMContentLoaded", function() {
+    setupCarousel();
+    loadRecipes();
+    loadBookmarks();
+    updateBookmarkCount();
+});
+
+let recipes = JSON.parse(localStorage.getItem('recipes')) || [];
+let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+const itemsPerPage = 10;
+let currentPage = 1;
+let filteredRecipes = recipes;
+
+function setupCarousel() {
+    let carouselImages = document.querySelectorAll('.carousel-image');
+    let currentImageIndex = 0;
+
+    function showNextImage() {
+        carouselImages[currentImageIndex].classList.remove('active');
+        currentImageIndex = (currentImageIndex + 1) % carouselImages.length;
+        carouselImages[currentImageIndex].classList.add('active');
+    }
+
+    carouselImages[currentImageIndex].classList.add('active');
+    setInterval(showNextImage, 3000);
+}
+
+function loadRecipes() {
+    const recipeList = document.getElementById('recipe-list');
+    recipeList.innerHTML = '';
+    filteredRecipes.sort((a, b) => a.title.localeCompare(b.title)); // Sort recipes alphabetically by title
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const currentRecipes = filteredRecipes.slice(start, end);
+    currentRecipes.forEach((recipe, index) => {
+        let li = document.createElement('li');
+        li.classList.add('recipe-item');
+        li.setAttribute('onclick', `showRecipe(${start + index})`);
+        li.innerHTML = `
+            <img src="${recipe.image}" alt="${recipe.title}" class="recipe-thumbnail">
+            <span>${recipe.title}</span>
+        `;
+        recipeList.appendChild(li);
+    });
+
+    document.getElementById('prev-button').disabled = currentPage === 1;
+    document.getElementById('next-button').disabled = end >= filteredRecipes.length;
+}
+function showRecipe(index) {
+    const recipe = filteredRecipes[index];
+    const recipeDetail = document.getElementById('recipe-detail');
+    const isBookmarked = bookmarks.some(bookmark => bookmark.title === recipe.title);
+    
+    recipeDetail.innerHTML = `
+        <h2>${recipe.title}</h2>
+        <img src="${recipe.image}" alt="${recipe.title}" class="recipe-large-image">
+        <p>URL: <a href="${recipe.url}" target="_blank">${recipe.url}</a></p>
+        <p>Publisher: ${recipe.publisher}</p>
+        <p>Servings: ${recipe.servings}</p>
+        <p>Prep Time: ${recipe.prepTime} minutes</p>
+        <h3>Ingredients:</h3>
+        <ul>${recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('')}</ul>
+        <button id="bookmark-btn" onclick="toggleBookmark(${index})">
+            ${isBookmarked ? 'Remove from Bookmark' : 'Add to Bookmark'}
+        </button>
+    `;
+}
+
+function toggleBookmark(index) {
+    const recipe = filteredRecipes[index];
+    const bookmarkIndex = bookmarks.findIndex(bookmark => bookmark.title === recipe.title);
+
+    if (bookmarkIndex !== -1) {
+        bookmarks.splice(bookmarkIndex, 1);
+    } else {
+        bookmarks.push(recipe);
+    }
+
+    localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+    loadBookmarks();
+    updateBookmarkCount();
+
+    // Update the bookmark button text directly
+    const bookmarkBtn = document.getElementById('bookmark-btn');
+    bookmarkBtn.textContent = bookmarkIndex !== -1 ? 'Add to Bookmark' : 'Remove from Bookmark';
+}
+
+function goToHome() {
+    const recipeDetail = document.getElementById('recipe-detail');
+    recipeDetail.innerHTML = `
+        <p>Start by searching for a recipe or an ingredient. Have fun!</p>
+        <div id="intro-carousel" class="carousel">
+            <img class="carousel-image" src="beans and bread-1.webp" alt="First Dish">
+            <img class="carousel-image" src="egusi and pounded yam-22.webp" alt="Second Dish">
+            <img class="carousel-image" src="fried rice image-3.webp" alt="Third Dish">
+            <img class="carousel-image" src="golden rice-4.webp" alt="Fourth Dish">
+            <img class="carousel-image" src="crayfish rice-5.webp" alt="Fifth Dish">
+        </div>
+    `;
+    setupCarousel(); // Reinitialize the carousel when home is clicked
+}
+
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        loadRecipes();
+    }
+}
+
+function nextPage() {
+    if ((currentPage * itemsPerPage) < filteredRecipes.length) {
+        currentPage++;
+        loadRecipes();
+    }
+}
+
+document.getElementById('search').addEventListener('input', function(event) {
+    const query = event.target.value.toLowerCase();
+    filteredRecipes = recipes.filter(recipe => recipe.title.toLowerCase().includes(query));
+    currentPage = 1;
+    loadRecipes();
+});
+
+function loadBookmarks() {
+    const bookmarkDropdown = document.getElementById('bookmark-dropdown');
+    bookmarkDropdown.innerHTML = '';
+    bookmarks.sort((a, b) => a.title.localeCompare(b.title)); // Sort bookmarks alphabetically by title
+    bookmarks.forEach((bookmark, index) => {
+        let li = document.createElement('li');
+        li.innerHTML = `
+            <img src="${bookmark.image}" alt="${bookmark.title}" class="bookmark-thumbnail">
+            <span>${index + 1}. ${bookmark.title}</span>
+        `;
+        li.setAttribute('onclick', `showBookmarkRecipe(${index})`);
+        bookmarkDropdown.appendChild(li);
+    });
+}
+
+function showBookmarkRecipe(index) {
+    const recipe = bookmarks[index];
+    const recipeDetail = document.getElementById('recipe-detail');
+    recipeDetail.innerHTML = `
+        <h2>${recipe.title}</h2>
+        <img src="${recipe.image}" alt="${recipe.title}" class="recipe-large-image">
+        <p>URL: <a href="${recipe.url}" target="_blank">${recipe.url}</a></p>
+        <p>Publisher: ${recipe.publisher}</p>
+        <p>Servings: ${recipe.servings}</p>
+        <p>Prep Time: ${recipe.prepTime} minutes</p>
+        <h3>Ingredients:</h3>
+        <ul>${recipe.ingredients.map(ingredient => `<li>${ingredient}</li>`).join('')}</ul>
+        <button onclick="toggleBookmarkFromBookmark(${index})">Remove from Bookmark</button>
+    `;
+}
+
+function toggleBookmarkFromBookmark(index) {
+    bookmarks.splice(index, 1);
+    localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+    loadBookmarks();
+    updateBookmarkCount();
+    document.getElementById('recipe-detail').innerHTML = '<p>Bookmark removed. Please select another recipe.</p>';
+}
+
+function updateBookmarkCount() {
+    const bookmarkCount = document.getElementById('bookmark-count');
+    bookmarkCount.textContent = bookmarks.length;
+}
+
+function toggleBookmarkDropdown() {
+    const bookmarkDropdown = document.getElementById('bookmark-dropdown');
+    bookmarkDropdown.classList.toggle('hidden');
+}
+
+function goToAbout() {
+    const recipeDetail = document.getElementById('recipe-detail');
+    recipeDetail.innerHTML = `
+        <h2>About Us</h2>
+        <p>We are an African food recipe company, dedicated to preserving the rich culinary traditions of Africa. Our mission is to help people around the world discover and enjoy authentic African dishes, keeping our culture alive and vibrant.</p>
+        <p>Over the years, we have collected and perfected recipes that have been passed down through generations. We believe in the power of food to connect people and cultures, and we are committed to sharing the beauty of African cuisine with the world.</p>
+        
+        <div id="about-carousel" class="carousel">
+            <img class="carousel-image" src="about-dish1.webp" alt="Traditional African Dish">
+            <img class="carousel-image" src="about-dish2.webp" alt="African Ingredients">
+            <img class="carousel-image" src="about-dish3.webp" alt="Cultural Celebration">
+            <img class="carousel-image" src="about-dish4.webp" alt="African Spice Market">
+            <img class="carousel-image" src="about-dish5.webp" alt="Heritage Dish">
+        </div>
+
+        <footer>
+            <p>&copy; <span id="current-year"></span> African Food Recipe Company. All rights reserved.</p>
+        </footer>
+    `;
+    setupCarousel(); // Reinitialize the carousel when about is clicked
+    updateYear(); // Update the copyright year dynamically
+}
+
+function updateYear() {
+    const yearElement = document.getElementById('current-year');
+    const currentYear = new Date().getFullYear();
+    yearElement.textContent = currentYear;
+}
+</script>
+
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f4c3; /* Light green background */
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        header {
+            background-color: #1b5e20; /* Dark green */
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+        header .button {
+            margin-left: 15px;
+            cursor: pointer;
+            background-color: #388e3c; /* Medium green */
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        header .button:hover {
+            background-color: #4caf50; /* Lighter green */
+        }
+        .container {
+            display: flex;
+            padding: 20px;
+        }
+        .recipe-list {
+            flex: 1;
+            margin-right: 20px;
+            background-color: #c8e6c9; /* Pale green */
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .recipe-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .recipe-list li {
+            background: #a5d6a7; /* Light green */
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: 1px solid #2e7d32; /* Darker green border */
+        }
+        .recipe-list li:hover {
+            background-color: #81c784; /* Medium green on hover */
+            color: #ffffff; /* White text on hover */
+        }
+        .recipe-actions {
+            flex: 1;
+        }
+        .recipe-card {
+            border: 1px solid #2e7d32; /* Darker green border */
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: 4px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+        .modal-content {
+            background-color: #ffffff;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #2e7d32; /* Darker green border */
+            width: 50%;
+            border-radius: 8px;
+        }
+        .close {
+            color: #4caf50; /* Medium green */
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: #2e7d32; /* Darker green on hover */
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .button {
+            background-color: #1b5e20; /* Dark green button */
+            color: white;
+            padding: 14px 20px;
+            margin: 8px 0;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 4px;
+        }
+        .button.red {
+            background-color: #f44336;
+        }
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .form-column {
+            flex: 1;
+            min-width: 200px;
+        }
+        label, input {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        input {
+            padding: 10px;
+            border: 1px solid #4caf50; /* Green border */
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: #e8f5e9; /* Very light green background */
+        }
+        .image-gallery {
+            text-align: center;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #e8f5e9; /* Very light green background */
+            border: 2px solid #2e7d32; /* Darker green border */
+            border-radius: 8px;
+            max-width: 800px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for a lifted effect */
+        }
+
+        .image-gallery h2 {
+            color: #1b5e20; /* Dark green text */
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .nigerian-foods-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 3px solid #4caf50; /* Medium green border */
+        }
+        .pagination-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination-container button {
+            background-color: #1b5e20; /* Dark green */
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .pagination-container button:hover {
+            background-color: #4caf50; /* Lighter green */
+        }
+
+
+        #sidebar {
+            max-width: 300px;
+        }
+
+        #recipe-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .recipe-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            cursor: pointer;
+        }
+
+        .recipe-item img.recipe-thumbnail {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .recipe-item span {
+            font-size: 1.2rem;
+            flex-grow: 1;
+        }
+
+        .recipe-large-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .bookmark-thumbnail {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+            object-fit: cover;
+            border-radius: 50%; /* Circular thumbnails */
+            border: 2px solid #4caf50; /* Green border around thumbnails */
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .bookmark-container {
+            position: relative;
+        }
+
+        #bookmark-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #ffffff; /* White background */
+            border: 1px solid #2e7d32; /* Dark green border */
+            padding: 0;
+            list-style-type: none;
+            width: 220px; /* Slightly wider for better spacing */
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            border-radius: 8px; /* Rounded corners for the dropdown */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for a lifted effect */
+        }
+
+        #bookmark-dropdown li {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px; /* Increased padding for a more spacious look */
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0; /* Light border between items */
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition on hover */
+            color: #1b5e20; /* Dark green text */
+        }
+
+        #bookmark-dropdown li:hover {
+            background-color: #c8e6c9; /* Light green on hover */
+            color: #ffffff; /* White text on hover */
+        }
+
+        .carousel {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .carousel-image {
+            width: 100%;
+            display: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .carousel-image.active {
+            display: block;
+            opacity: 1;
+        }
+
+        header nav {
+            display: flex;
+            gap: 10px; /* Space between the buttons */
+        }
+
+        header nav button {
+            background-color: #388e3c; /* Medium green */
+            border: none;
+            color: #ffffff; /* White text */
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        header nav button:hover {
+            background-color: #4caf50; /* Lighter green on hover */
+        }
+
+
+    .rotating-logo {
+        animation: rotate 3s infinite linear;
+    }
+
+    @keyframes rotate {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Comic+Sans+MS&display=swap');
+
+.animated-text {
+    font-family: 'Comic Sans MS', sans-serif;
+    color: green;
+    font-size: 24px; /* Adjust font size as needed */
+    animation: spellOut 10s steps(7, end) infinite;
+    white-space: nowrap;
+    overflow: hidden;
+    border-right: 3px solid green;
+    padding-right: 5px;
+}
+
+@keyframes spellOut {
+    0% {
+        content: "";
+    }
+    14.28% {
+        content: "B ";
+    }
+    28.56% {
+        content: "B E ";
+    }
+    42.84% {
+        content: "B E A ";
+    }
+    57.12% {
+        content: "B E A U ";
+    }
+    71.4% {
+        content: "B E A U T ";
+    }
+    85.68% {
+        content: "B E A U T Y ";
+    }
+    100% {
+        content: "BEAUTY";
+    }
+}
+
+.animated-text::after {
+    content: "B E A U T Y";
+    animation: spellOut 10s steps(7, end) infinite;
+}
+
+        footer {
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #1b5e20; /* Dark green background */
+    color: #ffffff; /* White text */
+    font-size: 14px;
+    border-top: 1px solid #4caf50; /* Green border */}
+
+    </style>
+</body>
+</html>

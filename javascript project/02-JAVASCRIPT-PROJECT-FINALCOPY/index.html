@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script> <!-- Add jsPDF library here -->
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9fbe7;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        header {
+            background-color: #2e7d32;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(14, 7, 7, 0.1);
+        }
+
+        header img {
+            height: 50px;
+            margin-right: 10px;
+        }
+
+        header .scrolling-text-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        header .scrolling-text {
+            font-size: 1.5em;
+            white-space: nowrap;
+            animation: scrolling 10s linear infinite;
+        }
+
+        @keyframes scrolling {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        header nav button {
+            margin: 0 5px;
+            cursor: pointer;
+            background-color: #388e3c;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        header nav button:hover {
+            background-color: #4caf50;
+        }
+
+        header input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin: 0 5px;
+            width: 200px;
+        }
+
+        #container {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        #sidebar {
+            flex: 1;
+            max-width: 300px;
+        }
+
+        #recipe-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .recipe-item {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 16px;
+            padding: 10px;
+            position: relative;
+        }
+
+        .recipe-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .recipe-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .recipe-item h3 {
+            margin: 12px 0;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .recipe-item p {
+            margin: 0 12px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .recipe-item button {
+            display: block;
+            margin: 12px auto;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .recipe-item button:hover {
+            background-color: #1b5e20;
+        }
+
+        #pagination {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #pagination button {
+            cursor: pointer;
+            background-color: #388e3c;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin: 0 3px;
+            transition: background-color 0.3s;
+        }
+
+        #pagination button.active {
+            background-color: #4caf50;
+        }
+
+        #recipe-detail {
+            flex: 3;
+            background-color: #e8f5e9;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #recipe-detail img {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .carousel {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 400px; /* Adjust height as needed */
+        }
+
+        .carousel-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the image covers the container, cropping if necessary */
+            object-position: right; /* Aligns the image to the right side of the container */
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .carousel-image.active {
+            opacity: 1;
+        }
+
+        .carousel-image:not(.active) {
+            opacity: 0;
+        }
+
+        #search-input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 0 5px;
+            width: 200px;
+        }
+         /* Add this style for notification */
+         #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 1000;
+        }
+
+        #notification.show {
+            opacity: 1;
+        }
+
+        #bookmark-dropdown{
+            list-style-type: none;
+        }
+
+
+        #about-section {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+#about-section h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+#about-section p {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Space between items */
+}
+
+.gallery-item {
+    flex: 1 1 calc(20% - 20px); /* 5 items per row with gap */
+    box-sizing: border-box;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+}
+
+.gallery-item p {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 14px;
+    color: #333; /* Dark gray color for text */
+}
+    
+footer {
+  background-color: #2e7d32;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+    </style>
+</head>
+<body>
+    <header>
+            <!-- Add this div for notifications -->
+    <div id="notification"></div>
+
+        <div style="display: flex; align-items: center;">
+            <img src="logo2.webp" alt="Beauty and Emma Recipe Collections Logo" class="rotating-logo">
+            <div class="scrolling-text-container">
+                <div class="scrolling-text">B E A U T Y & E M M A</div>
+            </div>
+        </div>
+        <nav>
+            <button id="home-button" onclick="goToHome()">Home</button>
+            <button id="about-button" onclick="goToAbout()">About</button>
+        </nav>
+
+        <input type="text" id="search-input" placeholder="Search here">
+        <button id="search-button">Search</button>
+        <a href="recipe.html"><button id="add-recipe-button">ADD RECIPE</button></a>
+        <div class="bookmark-container">
+            <button id="bookmarks-button" onclick="toggleBookmarkDropdown()">
+                <!-- (<span id="bookmark-count">0</span>) -->
+            </button>
+            <ul id="bookmark-dropdown" class="hidden"></ul>
+        </div>
+       
+    </header>
+    <div id="about-section" style="display: none;">
+        <h2>About Our Recipe Management Application</h2>
+        <p>Welcome to our Recipe Management Application! This platform is designed to help you organize and manage your favorite recipes with ease. Whether you're a home cook or a professional chef, our application allows you to add, edit, and delete recipes, view detailed recipe information, and download recipes as PDFs.</p>
+        <p>Our mission is to make cooking fun and accessible by providing a user-friendly interface where you can store your culinary creations. We hope you enjoy using the application as much as we enjoyed creating it!</p>
+        
+        <div class="gallery">
+            <div class="gallery-item">
+                <img src="about-dish1.webp.webp" alt="African Culture 1">
+                <p>Nigerian Jollof Rice</p>
+            </div>
+            <div class="gallery-item">
+                <img src="about-dish2.webp" alt="African Culture 2">
+                <p>African Spices and Ingredient</p>
+            </div>
+            <div class="gallery-item">
+                <img src="about-dish3.webp.webp" alt="African Culture 3">
+                <p>Dancing and feasting is part of our culture!</p>
+            </div>
+            <div class="gallery-item">
+                <img src="about-dish4.webp.webp" alt="African Culture 4">
+                <p>A typical Nigerian Market displaying varieties of ingredient</p>
+            </div>
+            <div class="gallery-item">
+                <img src="about-dish5.webp.webp" alt="African Culture 5">
+                <p>Cooking Brings Us Together!</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="container">
+        <aside id="sidebar">
+            <ul id="recipe-list"></ul>
+            <div id="pagination"></div>
+        </aside>
+        <main id="recipe-detail">
+            <p>Start by searching for a recipe or an ingredient. Have fun!</p>
+            <div id="intro-carousel" class="carousel">
+                <img class="carousel-image active" src="beans and bread-1.webp" alt="Beans and Bread">
+                <img class="carousel-image" src="egusi and pounded yam-2.webp" alt="egusi and pounded yam">
+                <img class="carousel-image" src="fried rice image-3.webp" alt="Third Dish">
+                <img class="carousel-image" src="golden rice-4.webp" alt="Fourth Dish">
+                <img class="carousel-image" src="crayfish rice-5.webp" alt="Fifth Dish">
+            </div>
+        </main>
+        <div id="recipe2-detail">
+            <!-- <h2 id="recipe-title">Recipe Title</h2>
+            <img id="recipe-image" src="path/to/image.jpg" alt="Recipe Image" />
+            <h3>Ingredients</h3>
+            <ul id="recipe-ingredients">
+                <li>Ingredient 1</li>
+                <li>Ingredient 2</li>
+                <li>Ingredient 3</li>
+            </ul>
+            <h3>Instructions</h3>
+            <p id="recipe-instructions">
+                Step-by-step instructions go here.
+            </p>
+            <button id="download-recipe">Download Recipe as PDF</button>
+            <button id="edit-recipe">Edit Recipe</button>
+            <button id="delete-recipe">Delete Recipe</button> -->
+        </div>
+
+        
+
+        
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Beauty and Emma Recipe Project. All rights reserved.</p>
+      </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookmarksButton = document.getElementById('bookmarks-button');
+            const bookmarkDropdown = document.getElementById('bookmark-dropdown');
+            const bookmarkCount = document.getElementById('bookmark-count');
+        
+            function toggleBookmarkDropdown() {
+                if (bookmarkDropdown.classList.contains('hidden')) {
+                    bookmarkDropdown.classList.remove('hidden');
+                } else {
+                    bookmarkDropdown.classList.add('hidden');
+                }
+            }
+        
+            function updateBookmarkCount(count) {
+                bookmarkCount.textContent = count;
+            }
+        
+            // Example function to add a new bookmark
+            function addBookmark(name) {
+                const listItem = document.createElement('li');
+                listItem.textContent = name;
+                bookmarkDropdown.appendChild(listItem);
+                updateBookmarkCount(bookmarkDropdown.children.length);
+            }
+        
+            // Example setup
+            bookmarksButton.addEventListener('click', toggleBookmarkDropdown);
+        
+            // Add sample bookmarks for demonstration
+            addBookmark('Recipe 1');
+            addBookmark('Recipe 2');
+        });
+        
+        // Function to add a recipe to the bookmarks
+        function addToBookmark(recipeId) {
+            let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+            if (!bookmarks.includes(recipeId)) {
+                bookmarks.push(recipeId);
+                localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                alert('Recipe added to bookmarks! 😊');
+            } else {
+                alert('Recipe is already in bookmarks! 😊');
+            }
+        }
+        
+        // Function to remove a recipe from the bookmarks
+        function removeFromBookmark(recipeId) {
+            let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+            if (bookmarks.includes(recipeId)) {
+                bookmarks = bookmarks.filter(id => id !== recipeId);
+                localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+                alert('Recipe removed from bookmarks! 😊');
+            } else {
+                alert('Recipe is not in bookmarks! 😊');
+            }
+        }
+        
+        function downloadAsPDF() {
+    const recipeDetail = document.getElementById('recipe-detail');
+    const scale = 2; // Scaling factor for better clarity
+
+    html2canvas(recipeDetail, {
+        scale: scale, // Increase the scale for higher resolution
+        useCORS: true // Allow cross-origin images
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        
+        // Calculate the image height to maintain the aspect ratio
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Add the image to the PDF
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+
+        pdf.save('recipe.pdf');
+    }).catch(err => {
+        console.error('Error generating PDF:', err);
+        alert('Failed to download PDF. Please try again.');
+    });
+}
+        
+        // Function to delete a recipe
+        function deleteRecipe(recipeId) {
+            document.getElementById(recipeId).remove();
+            alert('Recipe deleted successfully! 😊');
+        }
+        
+        // Function to navigate to the Home view
+        function goToHome() {
+            document.getElementById('about-section').style.display = 'none';
+            document.getElementById('intro-carousel').style.display = 'block';
+            document.getElementById('recipe-detail').style.display = 'block';
+            document.getElementById('recipe-list').style.display = 'block';
+            document.getElementById('pagination').style.display = 'block';
+            closeBookmarkDropdown(); // Close bookmarks dropdown when switching views
+        }
+        
+        // Function to navigate to the About view
+        function goToAbout() {
+            document.getElementById('intro-carousel').style.display = 'none';
+            document.getElementById('recipe-detail').style.display = 'none';
+            document.getElementById('about-section').style.display = 'block';
+            document.getElementById('recipe-list').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            closeBookmarkDropdown(); // Close bookmarks dropdown when switching views
+        }
+        
+        // Call goToHome on page load to ensure the home view is displayed initially
+        window.onload = function() {
+            goToHome();
+        };
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            setupCarousel();
+            loadRecipes();
+            loadBookmarks();
+            updateBookmarkCount();
+        });
+        
+        let recipes = JSON.parse(localStorage.getItem('recipes')) || [];
+        let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+        const itemsPerPage = 10;
+        let currentPage = 1;
+        let filteredRecipes = recipes;
+        
+        function setupCarousel() {
+            let carouselImages = document.querySelectorAll('.carousel-image');
+            let currentImageIndex = 0;
+        
+            function showNextImage() {
+                carouselImages[currentImageIndex].classList.remove('active');
+                currentImageIndex = (currentImageIndex + 1) % carouselImages.length;
+                carouselImages[currentImageIndex].classList.add('active');
+            }
+        
+            setInterval(showNextImage, 3000);
+        }
+        
+        function loadRecipes() {
+            const recipeList = document.getElementById('recipe-list');
+            recipeList.innerHTML = '';
+        
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+        
+            filteredRecipes.slice(start, end).forEach((recipe, index) => {
+                const li = document.createElement('li');
+                li.classList.add('recipe-item');
+                li.innerHTML = `
+                    <img src="${recipe.image}" alt="${recipe.name}">
+                    <h3>${recipe.name}</h3>
+                    <p>${recipe.description}</p>
+                    <button onclick="viewRecipe(${start + index})">View Recipe</button>
+                `;
+                recipeList.appendChild(li);
+            });
+        
+            updatePagination();
+        }
+        
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+        
+            const totalPages = Math.ceil(filteredRecipes.length / itemsPerPage);
+        
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                if (i === currentPage) {
+                    button.classList.add('active');
+                }
+                button.onclick = () => {
+                    currentPage = i;
+                    loadRecipes();
+                };
+                pagination.appendChild(button);
+            }
+        }
+        
+        function viewRecipe(index) {
+            const recipe = filteredRecipes[index];
+            const recipeDetail = document.getElementById('recipe-detail');
+            recipeDetail.innerHTML = `
+                <img src="${recipe.image}" alt="${recipe.name}">
+                <h2>${recipe.name}</h2>
+                <p>${recipe.description}</p>
+                <p>Ingredients: ${recipe.ingredients.join(', ')}</p>
+                <p>Instructions: ${recipe.instructions}</p>
+                <button onclick="downloadAsPDF()">Download Recipe as PDF</button>
+                <button onclick="toggleBookmark(${index})">${isBookmarked(index) ? 'Remove from' : 'Add to'} Bookmark</button>
+            `;
+        }
+        
+        function searchRecipes(query) {
+            filteredRecipes = recipes.filter(recipe => recipe.name.toLowerCase().includes(query.toLowerCase()));
+            currentPage = 1;
+            loadRecipes();
+        }
+        
+        document.getElementById('search-button').addEventListener('click', () => {
+            const query = document.getElementById('search-input').value;
+            searchRecipes(query);
+        });
+        
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            searchRecipes(e.target.value);
+        });
+        
+        function toggleBookmark(index) {
+            const recipeIndex = recipes.indexOf(filteredRecipes[index]);
+            const wasBookmarked = isBookmarked(recipeIndex);
+            
+            if (wasBookmarked) {
+                bookmarks = bookmarks.filter(bookmark => bookmark !== recipeIndex);
+                alert('Recipe removed from bookmarks! 😊');
+            } else {
+                bookmarks.push(recipeIndex);
+                alert('Recipe added to bookmarks! 😊');
+            }
+            
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+            loadBookmarks();
+            updateBookmarkCount();
+        
+            const isEmpty = bookmarks.length === 0;
+            document.getElementById('recipe-detail').innerHTML = isEmpty 
+                ? '<p>Oops! No bookmarks yet. 😢 Add some recipes to your bookmarks.</p>' 
+                : '<p>Manage your personal bookmark here 😊😊😊😊😊.</p>';
+        }
+        
+        function isBookmarked(index) {
+            return bookmarks.includes(index);
+        }
+        
+        function loadBookmarks() {
+            const bookmarkDropdown = document.getElementById('bookmark-dropdown');
+            bookmarkDropdown.innerHTML = '';
+        
+            bookmarks.forEach((bookmark) => {
+                if (recipes[bookmark]) {
+                    const li = document.createElement('li');
+                    li.textContent = recipes[bookmark].name;
+                    li.onclick = () => viewRecipe(bookmark);
+                    bookmarkDropdown.appendChild(li);
+                }
+            });
+        }
+        
+        function updateBookmarkCount() {
+            const bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+            const filteredBookmarks = bookmarks.filter(Boolean);
+            const bookmarkCount = filteredBookmarks.length;
+            console.log("BOOKMARK-COUNT", bookmarkCount);
+            document.getElementById('bookmark-count').textContent = bookmarkCount;
+        }
+        
+        function closeBookmarkDropdown() {
+            document.getElementById('bookmark-dropdown').classList.add('hidden');
+        }
+        </script>
+        
+        
+</body>
+</html>

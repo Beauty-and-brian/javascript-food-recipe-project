@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Management Application</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+
+      .container {
+    width: 70%;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.content-wrapper {
+    display: flex;
+    justify-content: space-between;
+}
+
+.recipe-display, .recipe-management {
+    flex: 1;
+    padding: 20px;
+    margin: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.recipe-management {
+    max-width: 40%;
+}
+
+.recipe-display {
+    max-width: 55%;
+    overflow-y: auto;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input, 
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#save-recipe {
+    background-color: #28a745;
+    color: #fff;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#save-recipe:hover {
+    background-color: #218838;
+}
+
+.recipe {
+    background-color: #f2f2f2;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.recipe h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.pagination-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.pagination-btn:hover {
+    background-color: #0056b3;
+}
+
+.pagination-btn.active {
+    background-color: #0056b3;
+}
+
+#image-preview {
+    max-width: 100%;
+    margin-top: 10px;
+}
+#back-to-home:hover {
+    background-color: #218838;
+    transform: scale(1.05);
+}
+#back-to-home {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Recipe Management</h1>
+        <form id="recipe-form">
+            <input type="hidden" id="edit-index" value="">
+            <div class="form-group">
+                <label for="recipe-name">Recipe Name:</label>
+                <input type="text" id="recipe-name" required>
+            </div>
+            <div class="form-group">
+                <label for="recipe-ingredients">Ingredients:</label>
+                <div id="ingredients-list">
+                    <input type="text" name="ingredients" class="ingredient" required>
+                </div>
+                <button type="button" id="add-ingredient">Add Ingredient</button>
+            </div>
+            <div class="form-group">
+                <label for="recipe-instructions">Instructions:</label>
+                <textarea id="recipe-instructions" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="recipe-image">Upload Image:</label>
+                <input type="file" id="recipe-image" accept="image/*">
+                <img id="image-preview" src="" alt="Image Preview" style="display:none; max-width: 100px; margin-top: 10px;">
+            </div>
+            <button type="submit" id="save-recipe">Save Recipe</button>
+        </form>
+        <div id="recipe-list"></div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+        <a href="index.html" id="back-to-home">Go back to Home Page</a>
+    </div>
+    <script>
+    //   document.addEventListener('DOMContentLoaded', function() {
+    // const recipeForm = document.getElementById('recipe-form');
+    // const recipeList = document.getElementById('recipe-list');
+    // const pagination = document.getElementById('pagination');
+    // const ingredientsList = document.getElementById('ingredients-list');
+    // const addIngredientBtn = document.getElementById('add-ingredient');
+    // const imageInput = document.getElementById('recipe-image');
+    // const imagePreview = document.getElementById('image-preview');
+    // let recipes = JSON.parse(localStorage.getItem('recipes')) || [];
+    // const recipesPerPage = 5;  // Number of recipes per page
+    // let currentPage = 1;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const recipeForm = document.getElementById('recipe-form');
+        const recipeList = document.getElementById('recipe-list');
+        const pagination = document.getElementById('pagination');
+        const ingredientsList = document.getElementById('ingredients-list');
+        const addIngredientBtn = document.getElementById('add-ingredient');
+        const imageInput = document.getElementById('recipe-image');
+        const imagePreview = document.getElementById('image-preview');
+        const deleteImageBtn = document.getElementById('delete-image');
+        const imageSizeInfo = document.getElementById('image-size');
+
+    function updateLocalStorage() {
+        localStorage.setItem('recipes', JSON.stringify(recipes));
+    }
+
+    function displayRecipes(page = 1) {
+        const start = (page - 1) * recipesPerPage;
+        const end = start + recipesPerPage;
+        const paginatedRecipes = recipes.slice(start, end);
+
+        recipeList.innerHTML = paginatedRecipes.map((recipe, index) => `
+            <div class="recipe">
+                <h3>${recipe.name}</h3>
+                <p>Ingredients: ${recipe.ingredients.join(', ')}</p>
+                <p>Instructions: ${recipe.instructions}</p>
+                <img src="${recipe.image}" alt="${recipe.name}" style="max-width: 100px;">
+                <button type="button" onclick="editRecipe(${index + start})">Edit</button>
+                <button type="button" onclick="deleteRecipe(${index + start})">Delete</button>
+            </div>
+        `).join('');
+
+        displayPagination(page);
+    }
+
+    function displayPagination(page) {
+        const totalPages = Math.ceil(recipes.length / recipesPerPage);
+        let paginationHTML = '';
+
+        for (let i = 1; i <= totalPages; i++) {
+            paginationHTML += `<button class="pagination-btn ${i === page ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+        }
+
+        pagination.innerHTML = paginationHTML;
+    }
+
+    window.changePage = function(page) {
+        currentPage = page;
+        displayRecipes(page);
+    };
+
+    window.editRecipe = function(index) {
+        const recipe = recipes[index];
+        document.getElementById('recipe-name').value = recipe.name;
+        document.getElementById('recipe-instructions').value = recipe.instructions;
+        ingredientsList.innerHTML = recipe.ingredients.map(ingredient => `
+            <input type="text" name="ingredients" class="ingredient" value="${ingredient}" required>
+        `).join('');
+        imagePreview.src = recipe.image;
+        imagePreview.style.display = 'block';
+        document.getElementById('edit-index').value = index;
+    };
+
+    window.deleteRecipe = function(index) {
+        recipes.splice(index, 1);
+        updateLocalStorage();
+        displayRecipes(currentPage);
+    };
+
+    recipeForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('recipe-name').value;
+        const ingredients = Array.from(document.querySelectorAll('.ingredient')).map(input => input.value);
+        const instructions = document.getElementById('recipe-instructions').value;
+        const image = imagePreview.src;
+
+        const newRecipe = { name, ingredients, instructions, image };
+        const editIndex = document.getElementById('edit-index').value;
+
+        if (editIndex !== "") {
+            recipes[editIndex] = newRecipe;
+            document.getElementById('edit-index').value = "";
+        } else {
+            recipes.push(newRecipe);
+        }
+
+        updateLocalStorage();
+        displayRecipes(currentPage);
+        recipeForm.reset();
+        imagePreview.style.display = 'none';
+    });
+
+    addIngredientBtn.addEventListener('click', function() {
+        const newIngredient = document.createElement('input');
+        newIngredient.type = 'text';
+        newIngredient.name = 'ingredients';
+        newIngredient.classList.add('ingredient');
+        newIngredient.required = true;
+        ingredientsList.appendChild(newIngredient);
+    });
+
+    imageInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    displayRecipes(currentPage);
+});
+
+function loadRecipes() {
+  const recipeList = document.getElementById('recipe-list');
+  recipeList.innerHTML = '';
+  recipes.forEach((recipe, index) => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <div class="recipe-card">
+        <h3>${recipe.title}</h3>
+        <img src="${recipe.image}" alt="${recipe.title}" style="width:100px;height:auto;">
+        <p>Publisher: ${recipe.publisher}</p>
+        <p>Prep Time: ${recipe.prepTime} minutes</p>
+        <p>Servings: ${recipe.servings}</p>
+      </div>
+    `;
+    recipeList.appendChild(li);
+  });
+  // Update the parent page (index.html)
+  const indexPath = '../index.html';
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', indexPath, true);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      const indexHtml = xhr.responseText;
+      const parser = new DOMParser();
+      const indexDoc = parser.parseFromString(indexHtml, 'text/html');
+      const recipeListParent = indexDoc.getElementById('recipe-list');
+      recipeListParent.innerHTML = recipeList.innerHTML;
+    }
+  };
+  xhr.send();
+}
+
+// function addRecipe() {
+//   const title = document.getElementById('title').value;
+//   const publisher = document.getElementById('publisher').value;
+//   const prepTime = document.getElementById('prep-time').value;
+//   const servings = document.getElementById('servings').value;
+//   const image = document.getElementById('image-url').value;
+//   const ingredients = [
+//     document.getElementById('ingredient1').value,
+//     document.getElementById('ingredient2').value,
+//     document.getElementById('ingredient3').value,
+//     document.getElementById('ingredient4').value,
+//     document.getElementById('ingredient5').value,
+//     document.getElementById('ingredient6').value,
+//   ].filter(ingredient => ingredient);
+
+//   const newRecipe = {
+//     title,
+//     publisher,
+//     prepTime,
+//     servings,
+//     image,
+//     ingredients,
+//     bookmarked: false,
+//   };
+
+//   recipes.push(newRecipe);
+//   saveRecipes();
+//   loadRecipes();
+//   clearRecipeForm(); // Clear the form fields
+// }
+
+// // Clear the form fields
+// function clearRecipeForm() {
+//   document.getElementById('title').value = '';
+//   document.getElementById('publisher').value = '';
+//   document.getElementById('prep-time').value = '';
+//   document.getElementById('servings').value = '';
+//   document.getElementById('image-url').value = '';
+//   document.getElementById('ingredient1').value = '';
+//   document.getElementById('ingredient2').value = '';
+//   document.getElementById('ingredient3').value = '';
+//   document.getElementById('ingredient4').value = '';
+//   document.getElementById('ingredient5').value = '';
+//   document.getElementById('ingredient6').value = '';
+//   document.getElementById('imagePreview').src = ''; // Clear the image preview
+//   document.getElementById('imagePreview').style.display = 'none';
+// }
+
+document.getElementById('recipe-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            // Save the recipe logic (you can add more to this as needed)
+            const title = document.getElementById('recipe-title').value;
+            const description = document.getElementById('recipe-description').value;
+            const ingredients = document.getElementById('recipe-ingredients').value;
+            const instructions = document.getElementById('recipe-instructions').value;
+
+            // Display the saved data (for testing purposes)
+            console.log('Recipe saved:', {
+                title,
+                description,
+                ingredients,
+                instructions
+            });
+
+            // Hide the form and show the create recipe button
+            document.getElementById('recipe-form-container').style.display = 'none';
+            document.getElementById('create-recipe-button-container').style.display = 'block';
+        });
+
+        // document.getElementById('create-recipe-button').addEventListener('click', function () {
+        //     // Show the form again and hide the create recipe button
+        //     document.getElementById('recipe-form-container').style.display = 'block';
+        //     document.getElementById('create-recipe-button-container').style.display = 'none';
+        // });
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forkify - Add Recipe</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Forkify</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="add-recipe.html">Add Recipe</a>
+        </nav>
+    </header>
+    <div class="container">
+        <form id="addRecipeForm">
+            <h2>Recipe Data</h2>
+            <label for="title">Title</label>
+            <input type="text" id="title" required>
+            
+            <label for="url">URL</label>
+            <input type="url" id="url">
+            
+            <label for="image-url">Image URL</label>
+            <input type="url" id="image-url">
+            
+            <label for="publisher">Publisher</label>
+            <input type="text" id="publisher">
+            
+            <label for="prep-time">Prep Time</label>
+            <input type="text" id="prep-time">
+            
+            <label for="servings">Servings</label>
+            <input type="number" id="servings">
+            
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
